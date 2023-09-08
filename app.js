@@ -1,3 +1,4 @@
+
 const express = require("express");
 const path = require("path");
 const { open } = require("sqlite");
@@ -33,6 +34,7 @@ app.post("/register", async (request, response) => {
   gettinguser = await db.get(checkinguser);
   if (gettinguser === undefined) {
     if (password.length < 5) {
+      response.status(400);
       response.send("Password is too short");
     } else {
       const addinguser = `
@@ -61,10 +63,11 @@ app.post("/login", async (request, response) => {
   gettinguser = await db.get(checkinguser);
   if (gettinguser === undefined) {
     response.status(400);
-    response.send("Invalid User");
+    response.send("Invalid user");
   } else {
     const comparing = await bcrypt.compare(password, gettinguser.password);
     if (comparing === true) {
+      response.status(200);
       response.send("Login success!");
     } else {
       response.status(400);
@@ -78,21 +81,24 @@ app.put("/change-password", async (request, response) => {
   const findinguser = `select * from user where username='${username}';`;
   const checkinguser = await db.get(findinguser);
   if (checkinguser === undefined) {
-    response.send(400);
-    response.send("Invalid User");
+    response.status(400);
+    response.send("Invalid current password");
   } else {
     const comparing = await bcrypt.compare(oldPassword, checkinguser.password);
     if (comparing === true) {
       if (newPassword.length < 5) {
+        response.status(400);
         response.send("Password is too short");
       } else {
         const encryptedone = await bcrypt.hash(newPassword, 10);
         const updating = `update user set password='${encryptedone}'
          where username='${username}';`;
         await db.run(updating);
+        response.status(200);
         response.send("Password updated");
       }
     } else {
+      response.status(400);
       response.send("Invalid current password");
     }
   }
